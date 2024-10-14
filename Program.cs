@@ -18,8 +18,12 @@ x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 var app = builder.Build();
 
+var group = app.MapGroup("/pizzas").WithParameterValidation();
+
+const string itemEndpoint = "getItemById";
+
 // GET endpoint to retrieve all items with their related menus
-app.MapGet("/items", async (MyDbContext dbContext) =>
+group.MapGet("/items", async (MyDbContext dbContext) =>
 {
     var items = await dbContext.Items
         .Include(i => i.Menus)  // Include related menus
@@ -28,7 +32,7 @@ app.MapGet("/items", async (MyDbContext dbContext) =>
 });
 
 // GET endpoint to retrieve all menus with their related items
-app.MapGet("/menus", async (MyDbContext dbContext) =>
+group.MapGet("/menus", async (MyDbContext dbContext) =>
 {
     var categories = await dbContext.Menus
         .Include(c => c.Item)  // Include the related item
@@ -36,17 +40,35 @@ app.MapGet("/menus", async (MyDbContext dbContext) =>
     return Results.Ok(categories);
 });
 
+//GET Item by id
+/* group.MapGet("/items/{id}", async (int id, MyDbContext dbContext) =>
+{
+    var item = await dbContext.Items.FindAsync(id);
+
+    return item is not null ? Results.Ok(item) : Results.NotFound();
+}).WithName(itemEndpoint);
+ */
+
+//GET Item by id with menus
+group.MapGet("/items/{id}", async (int id, MyDbContext dbContext) =>
+{
+    var item = await dbContext.Items.Include(i => i.Menus).FirstOrDefaultAsync(i => i.ItemId == id);
+
+    return item is not null ? Results.Ok(item) : Results.NotFound();
+}).WithName(itemEndpoint);
+
+
 // POST endpoint to create a new Item
-app.MapPost("/items", async (MyDbContext dbContext, Item item) =>
+group.MapPost("/items", async (MyDbContext dbContext, Item newItem) =>
 {
     // Add the item to the database context
-    dbContext.Items.Add(item);
+    dbContext.Items.Add(newItem);
 
     // Save changes to the database
     await dbContext.SaveChangesAsync();
 
     // Return the created item with a 201 Created response
-    return Results.Created($"/items/{item.ItemId}", item);
+    return Results.CreatedAtRoute(itemEndpoint, new { id = newItem.ItemId }, newItem);
 });
 
 
