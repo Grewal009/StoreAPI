@@ -5,7 +5,7 @@ using Store.Api.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connString = builder.Configuration.GetConnectionString("ProductContext");
+var connString = builder.Configuration.GetConnectionString("ProductNewContext");
 
 builder.Services.AddSqlServer<MyDbContext>(connString);
 
@@ -70,6 +70,9 @@ group.MapPost("/items", async (MyDbContext dbContext, Item newItem) =>
     // Return the created item with a 201 Created response
     return Results.CreatedAtRoute(itemEndpoint, new { id = newItem.ItemId }, newItem);
 });
+
+
+
 
 
 app.Run();
