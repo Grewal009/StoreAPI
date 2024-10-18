@@ -106,4 +106,53 @@ group.MapPost("/customer", async (MyDbContext dbContext, Customer newCustomer) =
 });
 
 
+//Post request to create new order and order details
+group.MapPost("/orders", async (MyDbContext dbContext, Order newOrder) =>
+{
+    // Step 1: Find if the customer exists
+    var customer = await dbContext.Customers.FindAsync(newOrder.CustomerId);
+    if (customer == null)
+    {
+        return Results.NotFound($"Customer with ID {newOrder.CustomerId} not found.");
+    }
+
+    // Step 2: Create a new Order
+    var order = new Order
+    {
+        CustomerId = newOrder.CustomerId,
+        OrderDateTime = newOrder.OrderDateTime,
+        TotalAmount = newOrder.TotalAmount,
+        PaymentStatus = newOrder.PaymentStatus,
+        DeliveryStatus = newOrder.DeliveryStatus
+    };
+
+    // Step 3: Add each OrderDetail from the DTO to the Order
+    foreach (var detailDto in newOrder.OrderDetails)
+    {
+        var orderDetail = new OrderDetail
+        {
+            ItemId = detailDto.ItemId,
+            Size = detailDto.Size,
+            Quantity = detailDto.Quantity,
+            PricePerPiece = detailDto.PricePerPiece,
+            CustomerId = newOrder.CustomerId,  // Optional: If you need CustomerId for OrderDetail
+            Order = order // Link the order detail to the order
+        };
+
+        // Add the order detail to the order's list of details
+        order.OrderDetails.Add(orderDetail);
+    }
+
+    // Step 4: Add the new order to the context
+    dbContext.Orders.Add(order);
+
+    // Step 5: Save changes to the database
+    await dbContext.SaveChangesAsync();
+
+    // Step 6: Return a success response
+    return Results.Created();
+});
+
+
+
 app.Run();

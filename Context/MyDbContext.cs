@@ -18,19 +18,6 @@ public class MyDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Relationship: Customer -> OrderDetails (One Customer to Many OrderDetails)
-        modelBuilder.Entity<OrderDetail>()
-            .HasOne(od => od.Customer)
-            .WithMany(c => c.OrderDetails)
-            .HasForeignKey(od => od.CustomerId)
-            .OnDelete(DeleteBehavior.Restrict); // Prevents multiple cascading paths
-
-        // Relationship: Order -> OrderDetails (One Order to Many OrderDetails)
-        modelBuilder.Entity<OrderDetail>()
-            .HasOne(od => od.Order)
-            .WithMany(o => o.OrderDetails)
-            .HasForeignKey(od => od.OrderId)
-            .OnDelete(DeleteBehavior.Cascade); // Deleting Order also deletes its OrderDetails
 
         // Item => OrderDetails relationship too
         modelBuilder.Entity<OrderDetail>()
@@ -45,11 +32,7 @@ public class MyDbContext : DbContext
             .WithMany(c => c.Orders)
             .HasForeignKey(o => o.CustomerId);
 
-        // Relationship: Order -> OrderDetail (One Order to Many OrderDetails)
-        modelBuilder.Entity<Order>()
-            .HasMany(o => o.OrderDetails)
-            .WithOne(od => od.Order)
-            .HasForeignKey(od => od.OrderId);
+
 
     }
 
