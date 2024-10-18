@@ -38,6 +38,19 @@ public class MyDbContext : DbContext
             .WithMany()
             .HasForeignKey(od => od.ItemId)
             .OnDelete(DeleteBehavior.Restrict); // Or any other behavior
+
+        // Relationship: Customer -> Order (One Customer to Many Orders)
+        modelBuilder.Entity<Order>()
+            .HasOne(o => o.Customer)
+            .WithMany(c => c.Orders)
+            .HasForeignKey(o => o.CustomerId);
+
+        // Relationship: Order -> OrderDetail (One Order to Many OrderDetails)
+        modelBuilder.Entity<Order>()
+            .HasMany(o => o.OrderDetails)
+            .WithOne(od => od.Order)
+            .HasForeignKey(od => od.OrderId);
+
     }
 
 }

@@ -21,6 +21,7 @@ var app = builder.Build();
 var group = app.MapGroup("/pizzas").WithParameterValidation();
 
 const string itemEndpoint = "getItemById";
+const string customerEndpoint = "getCustomerById";
 
 // GET endpoint to retrieve all items with their related menus
 group.MapGet("/items", async (MyDbContext dbContext) =>
@@ -72,7 +73,37 @@ group.MapPost("/items", async (MyDbContext dbContext, Item newItem) =>
 });
 
 
+//Get customer details by id
+group.MapGet("/customer/{id}", async (int id, MyDbContext dbContext) =>
+{
+    // Fetch the customer along with related orders and order details
+    var customer = await dbContext.Customers
+        .Include(c => c.Orders)                      // Include Orders
+        .ThenInclude(o => o.OrderDetails)            // Include OrderDetails within Orders
+        .FirstOrDefaultAsync(c => c.CustomerId == id);
 
+    // Check if customer exists
+    if (customer == null)
+    {
+        return Results.NotFound();
+    }
+
+    // Return the customer data with orders and order details
+    return Results.Ok(customer);
+}).WithName(customerEndpoint);
+
+// POST endpoint to create a new customer
+group.MapPost("/customer", async (MyDbContext dbContext, Customer newCustomer) =>
+{
+    // Add the item to the database context
+    dbContext.Customers.Add(newCustomer);
+
+    // Save changes to the database
+    await dbContext.SaveChangesAsync();
+
+    // Return the created item with a 201 Created response
+    return Results.CreatedAtRoute(customerEndpoint, new { id = newCustomer.CustomerId }, newCustomer);
+});
 
 
 app.Run();
