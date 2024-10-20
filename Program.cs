@@ -5,6 +5,15 @@ using Store.Api.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin",
+        builder => builder.WithOrigins("http://localhost:5173") // React app URL
+                          .AllowAnyHeader()
+                          .AllowAnyMethod());
+});
+
+
 var connString = builder.Configuration.GetConnectionString("ProductNewContext");
 
 builder.Services.AddSqlServer<MyDbContext>(connString);
@@ -16,7 +25,15 @@ builder.Services.AddSqlServer<MyDbContext>(connString);
 builder.Services.AddControllers().AddJsonOptions(x =>
 x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
+builder.Services.AddEndpointsApiExplorer();
+
 var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+app.UseHttpsRedirection();
+app.UseCors("AllowSpecificOrigin"); // Use the CORS policy
+app.UseAuthorization();
+
 
 var group = app.MapGroup("/pizzas").WithParameterValidation();
 
@@ -106,7 +123,7 @@ group.MapPost("/customer", async (MyDbContext dbContext, Customer newCustomer) =
 });
 
 
-//Post request to create new order and order details
+//POST request to create new order and order details
 group.MapPost("/orders", async (MyDbContext dbContext, Order newOrder) =>
 {
     // Step 1: Find if the customer exists
@@ -126,7 +143,7 @@ group.MapPost("/orders", async (MyDbContext dbContext, Order newOrder) =>
         DeliveryStatus = newOrder.DeliveryStatus
     };
 
-    // Step 3: Add each OrderDetail from the DTO to the Order
+    // Step 3: Add each OrderDetail from the Order
     foreach (var detailDto in newOrder.OrderDetails)
     {
         var orderDetail = new OrderDetail
@@ -135,7 +152,7 @@ group.MapPost("/orders", async (MyDbContext dbContext, Order newOrder) =>
             Size = detailDto.Size,
             Quantity = detailDto.Quantity,
             PricePerPiece = detailDto.PricePerPiece,
-            CustomerId = newOrder.CustomerId,  // Optional: If you need CustomerId for OrderDetail
+            CustomerId = newOrder.CustomerId,  // CustomerId for OrderDetail
             Order = order // Link the order detail to the order
         };
 
@@ -150,7 +167,7 @@ group.MapPost("/orders", async (MyDbContext dbContext, Order newOrder) =>
     await dbContext.SaveChangesAsync();
 
     // Step 6: Return a success response
-    return Results.Created();
+    return Results.Created($"/orders/{order.OrderId}", order);
 });
 
 
