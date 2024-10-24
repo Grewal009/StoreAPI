@@ -12,7 +12,7 @@ using Product.Api;
 namespace Store.Api.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    [Migration("20241018100022_Initial")]
+    [Migration("20241024180958_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

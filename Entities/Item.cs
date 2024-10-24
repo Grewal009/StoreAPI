@@ -18,13 +18,13 @@ public class Item
     [StringLength(150)]
     public required string Image { get; set; }
 
-    [Required]
-    [StringLength(500)]
-    public required string Ingredients { get; set; }
 
-    [Required]
+    [StringLength(500)]
+    public string Ingredients { get; set; } = string.Empty;
+
+
     [StringLength(100)]
-    public required string Allergens { get; set; }
+    public string Allergens { get; set; } = string.Empty;
 
     public bool IsVegetarian { get; set; }
 
