@@ -89,6 +89,16 @@ group.MapPost("/items", async (MyDbContext dbContext, Item newItem) =>
     return Results.CreatedAtRoute(itemEndpoint, new { id = newItem.ItemId }, newItem);
 });
 
+// GET all customers info
+group.MapGet("/customer", async (MyDbContext dbContext) =>
+{
+    var customers = await dbContext.Customers.ToListAsync();
+
+    return customers.Count > 0 ? Results.Ok(customers) : Results.NotFound("No customers found.");
+});
+
+
+
 
 //Get customer details by id
 group.MapGet("/customer/{id}", async (int id, MyDbContext dbContext) =>
