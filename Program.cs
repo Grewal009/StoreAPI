@@ -1,5 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Product.Api;
 using Store.Api.Entities;
 
@@ -27,12 +32,34 @@ x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 builder.Services.AddEndpointsApiExplorer();
 
+// Configure JWT authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "http://localhost:5122",
+            ValidAudience = "http://localhost:5173",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("MyVerySecureAndLongSecretKey12345"))
+        };
+    });
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigin"); // Use the CORS policy
+
+
+// Use authentication
+app.UseAuthentication();
 app.UseAuthorization();
+
 
 
 var group = app.MapGroup("/pizzas").WithParameterValidation();
@@ -178,8 +205,38 @@ group.MapPost("/orders", async (MyDbContext dbContext, Order newOrder) =>
 
     // Step 6: Return a success response
     return Results.Created($"/orders/{order.OrderId}", order);
-});
+}).RequireAuthorization();
 
+
+
+//Login endpoint
+group.MapPost("/login", (Customer login) =>
+{
+    if (true) // Dummy login check
+    {
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, login.Email),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("MyVerySecureAndLongSecretKey12345"));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: "http://localhost:5122",
+            audience: "http://localhost:5173",
+            claims: claims,
+            expires: DateTime.Now.AddMinutes(30),
+            signingCredentials: creds);
+
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+        return Results.Ok(new { token = tokenString });
+    }
+
+    return Results.Unauthorized();
+});
 
 
 app.Run();
