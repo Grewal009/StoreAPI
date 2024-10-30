@@ -238,5 +238,40 @@ group.MapPost("/login", (Customer login) =>
     return Results.Unauthorized();
 });
 
+// GET all orders info
+group.MapGet("/orders", async (MyDbContext dbContext) =>
+{
+    var orders = await dbContext.Orders.ToListAsync();
+
+    return orders.Count > 0 ? Results.Ok(orders) : Results.NotFound("No order found.");
+});
+
+//PUT request to update order by id
+group.MapPut("/orders/{id}", async (int id, Order updatedOrder, MyDbContext dbContext) =>
+{
+    // Retrieve the existing order by orderId
+    var existingOrder = await dbContext.Orders.FindAsync(id);
+
+    // Check if the order exists
+    if (existingOrder == null)
+    {
+        return Results.NotFound($"Order with ID {id} not found.");
+    }
+
+    // Update the fields
+    existingOrder.CustomerId = updatedOrder.CustomerId;
+    existingOrder.OrderDateTime = updatedOrder.OrderDateTime;
+    existingOrder.TotalAmount = updatedOrder.TotalAmount;
+    existingOrder.PaymentStatus = updatedOrder.PaymentStatus;
+    existingOrder.DeliveryStatus = updatedOrder.DeliveryStatus;
+
+    // Save changes to the database
+    await dbContext.SaveChangesAsync();
+
+    return Results.Ok(existingOrder); // Return the updated order
+}).RequireAuthorization();
+
+
+
 
 app.Run();
